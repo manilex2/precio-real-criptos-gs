@@ -31,6 +31,7 @@ app.get('/', async (req, res) => {
             var sql = `SELECT * FROM ${tabla}`;
             conexion.query(sql, function (err, resultado) {
                 if (err) throw err;
+                console.log('Conexion establecida con la base de datos');
                 JSON.stringify(resultado);
                 trasladarPrecioActual(resultado, hoja);
             });
