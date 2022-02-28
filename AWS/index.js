@@ -24,7 +24,10 @@ exports.handler = async function (event) {
         await finalizarEjecucion();
         async function obtenerPrecioActual(tabla, hoja){
             try {
-                var sql = `SELECT * FROM ${tabla}`;
+                var fecha = new Date();
+                var mes = fecha.getMonth() + 1;
+                var fechaActual = `${fecha.getFullYear()}-${mes}-${fecha.getDate()}`;
+                var sql = `SELECT * FROM ${tabla} WHERE fecha = '${fechaActual}'`;
                 conexion.query(sql, function (err, resultado) {
                     if (err) throw err;
                     console.log('Conexion establecida con la base de datos');
@@ -47,7 +50,6 @@ exports.handler = async function (event) {
                 for (let i = 0; i < resultado.length; i++) {
                     datos.push([resultado[i].name, resultado[i].fecha, resultado[i].precio]);
                 }
-                console.log(datos);
                 await googleSheet.spreadsheets.values.append({
                     auth,
                     spreadsheetId,
