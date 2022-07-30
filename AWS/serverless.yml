@@ -1,0 +1,46 @@
+service: precio-real-criptos-gs-fb
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  region: us-east-2
+  environment:
+    DB_USER: ${env:DB_USER}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    DB_HOST: ${env:DB_HOST}
+    DB_PORT: ${env:DB_PORT}
+    DB_DATABASE: ${env:DB_DATABASE}
+    TABLE_CRIPTO_PRICE: ${env:TABLE_CRIPTO_PRICE}
+
+functions:
+  precioRealCriptosGS:
+    handler: index.handler
+    memorySize: 512
+    name: precioRealCriptosGS
+    description: LCF3 - Función que toma de la base de datos el precio actual de criptos y los pasa a Google Spreadsheet
+    timeout: 300
+    maximumRetryAttempts: 0
+    environment:
+      SPREADSHEET_ID_CP1: ${env:SPREADSHEET_ID_CP1}
+      SPREADSHEET_ID_CP2: ${env:SPREADSHEET_ID_CP2}
+      SPREADSHEET_ID_CP3: ${env:SPREADSHEET_ID_CP3}
+      ID_HOJA_RANGO: ${env:ID_HOJA_RANGO}
+    events:
+      - schedule:
+          name: guardarPrecioRealCriptosGS
+          description: Guarda y actualiza el precio actual de las criptos desde la base de datos a Google Spreadsheet cada 5 minutos
+          rate: cron(4/5 * ? * * *)
+
+  precioRealCriptosFB:
+    handler: firebase.handler
+    memorySize: 512
+    name: precioRealCriptosFB
+    description: LCF21 - Función que toma de la base de datos el precio actual de criptos y los pasa a la tabla de precios actuales de Firestore
+    timeout: 300
+    maximumRetryAttempts: 0
+    events:
+      - schedule:
+          name: guardarPrecioRealCriptosFB
+          description: Guarda y actualiza el precio actual de las criptos desde la base de datos a Firestore cada 5 minutos
+          rate: cron(4/5 * ? * * *)

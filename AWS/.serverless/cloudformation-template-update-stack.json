@@ -1,0 +1,396 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ServerlessDeploymentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ServerlessDeploymentBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      },
+                      "/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "PrecioRealCriptosGSLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/precioRealCriptosGS"
+      }
+    },
+    "PrecioRealCriptosFBLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/precioRealCriptosFB"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "precio-real-criptos-gs-fb",
+                  "dev",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/precioRealCriptosGS:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/precioRealCriptosFB:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/precioRealCriptosGS:*:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/precioRealCriptosFB:*:*"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "precio-real-criptos-gs-fb",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "PrecioRealCriptosGSLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/precio-real-criptos-gs-fb/dev/1659172047031-2022-07-30T09:07:27.031Z/precio-real-criptos-gs-fb.zip"
+        },
+        "Handler": "index.handler",
+        "Runtime": "nodejs16.x",
+        "FunctionName": "precioRealCriptosGS",
+        "MemorySize": 512,
+        "Timeout": 300,
+        "Description": "LCF3 - Función que toma de la base de datos el precio actual de criptos y los pasa a Google Spreadsheet",
+        "Environment": {
+          "Variables": {
+            "DB_USER": "root",
+            "DB_PASSWORD": "Invrtir*2021",
+            "DB_HOST": "seguimiento-oportunidades.cbu0yo4ytkop.us-east-2.rds.amazonaws.com",
+            "DB_PORT": "3306",
+            "DB_DATABASE": "invrtircriptos",
+            "TABLE_CRIPTO_PRICE": "preciocriptosactual",
+            "SPREADSHEET_ID_CP1": "1R056Q1p1emTe8jAJgNgYxkEJ_HNOSW3ALQiVNs7zPhk",
+            "SPREADSHEET_ID_CP2": "1EinheILk6yzfCmOBJg6HxYc6yePgsPok1CCoIxPm3-E",
+            "SPREADSHEET_ID_CP3": "18Nva_FO9QZfggj6NUd9LE9tuCPMUkaO33GRRbw2sHh4",
+            "ID_HOJA_RANGO": "Precios-actuales!A2:C"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "PrecioRealCriptosGSLogGroup"
+      ]
+    },
+    "PrecioRealCriptosFBLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/precio-real-criptos-gs-fb/dev/1659172047031-2022-07-30T09:07:27.031Z/precio-real-criptos-gs-fb.zip"
+        },
+        "Handler": "firebase.handler",
+        "Runtime": "nodejs16.x",
+        "FunctionName": "precioRealCriptosFB",
+        "MemorySize": 512,
+        "Timeout": 300,
+        "Description": "LCF21 - Función que toma de la base de datos el precio actual de criptos y los pasa a la tabla de precios actuales de Firestore",
+        "Environment": {
+          "Variables": {
+            "DB_USER": "root",
+            "DB_PASSWORD": "Invrtir*2021",
+            "DB_HOST": "seguimiento-oportunidades.cbu0yo4ytkop.us-east-2.rds.amazonaws.com",
+            "DB_PORT": "3306",
+            "DB_DATABASE": "invrtircriptos",
+            "TABLE_CRIPTO_PRICE": "preciocriptosactual"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "PrecioRealCriptosFBLogGroup"
+      ]
+    },
+    "PrecioRealCriptosGSLambdaVersionbC0BSZvT9SHZhwz6J75YHMqmndgYHo5RSmbyLWmp3s": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PrecioRealCriptosGSLambdaFunction"
+        },
+        "CodeSha256": "6N2fV6IIqLrob045n+4JJ2UjcwSAPxENLxz9gC0dx+s=",
+        "Description": "LCF3 - Función que toma de la base de datos el precio actual de criptos y los pasa a Google Spreadsheet"
+      }
+    },
+    "PrecioRealCriptosGSLambdaEvConf": {
+      "Type": "AWS::Lambda::EventInvokeConfig",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PrecioRealCriptosGSLambdaFunction"
+        },
+        "DestinationConfig": {},
+        "Qualifier": "$LATEST",
+        "MaximumRetryAttempts": 0
+      }
+    },
+    "PrecioRealCriptosFBLambdaVersionCsJdvHNwYq9kGdknv7kGgnFKEEmncrePmZuVvAlcTk": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PrecioRealCriptosFBLambdaFunction"
+        },
+        "CodeSha256": "6N2fV6IIqLrob045n+4JJ2UjcwSAPxENLxz9gC0dx+s=",
+        "Description": "LCF21 - Función que toma de la base de datos el precio actual de criptos y los pasa a la tabla de precios actuales de Firestore"
+      }
+    },
+    "PrecioRealCriptosFBLambdaEvConf": {
+      "Type": "AWS::Lambda::EventInvokeConfig",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PrecioRealCriptosFBLambdaFunction"
+        },
+        "DestinationConfig": {},
+        "Qualifier": "$LATEST",
+        "MaximumRetryAttempts": 0
+      }
+    },
+    "PrecioRealCriptosGSEventsRuleSchedule1": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "cron(4/5 * ? * * *)",
+        "State": "ENABLED",
+        "Name": "guardarPrecioRealCriptosGS",
+        "Description": "Guarda y actualiza el precio actual de las criptos desde la base de datos a Google Spreadsheet cada 5 minutos",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "PrecioRealCriptosGSLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Id": "precioRealCriptosGSSchedule"
+          }
+        ]
+      }
+    },
+    "PrecioRealCriptosGSLambdaPermissionEventsRuleSchedule1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "PrecioRealCriptosGSLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "PrecioRealCriptosGSEventsRuleSchedule1",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "PrecioRealCriptosFBEventsRuleSchedule1": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "cron(4/5 * ? * * *)",
+        "State": "ENABLED",
+        "Name": "guardarPrecioRealCriptosFB",
+        "Description": "Guarda y actualiza el precio actual de las criptos desde la base de datos a Firestore cada 5 minutos",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "PrecioRealCriptosFBLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Id": "precioRealCriptosFBSchedule"
+          }
+        ]
+      }
+    },
+    "PrecioRealCriptosFBLambdaPermissionEventsRuleSchedule1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "PrecioRealCriptosFBLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "PrecioRealCriptosFBEventsRuleSchedule1",
+            "Arn"
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      },
+      "Export": {
+        "Name": "sls-precio-real-criptos-gs-fb-dev-ServerlessDeploymentBucketName"
+      }
+    },
+    "PrecioRealCriptosGSLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "PrecioRealCriptosGSLambdaVersionbC0BSZvT9SHZhwz6J75YHMqmndgYHo5RSmbyLWmp3s"
+      },
+      "Export": {
+        "Name": "sls-precio-real-criptos-gs-fb-dev-PrecioRealCriptosGSLambdaFunctionQualifiedArn"
+      }
+    },
+    "PrecioRealCriptosFBLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "PrecioRealCriptosFBLambdaVersionCsJdvHNwYq9kGdknv7kGgnFKEEmncrePmZuVvAlcTk"
+      },
+      "Export": {
+        "Name": "sls-precio-real-criptos-gs-fb-dev-PrecioRealCriptosFBLambdaFunctionQualifiedArn"
+      }
+    }
+  }
+}
