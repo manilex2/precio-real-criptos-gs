@@ -4,7 +4,7 @@ const { database } = require('./keys');
 const admin = require("firebase-admin");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
-const serviceAccount = require("./credentials-fb.json");
+const serviceAccount = require("./credentials-firebase.json");
 
 initializeApp({
     credential: admin.credential.cert(serviceAccount),
